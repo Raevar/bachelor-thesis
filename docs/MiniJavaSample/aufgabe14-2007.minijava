@@ -1,0 +1,14 @@
+int i , j , k , n;
+i = read ();
+k = -1;
+j = read ();
+n = 0;
+while( j >= -k ){
+    if( i > j )
+          i = i - j;
+    else
+          j = j % i;
+    n = (n - k) * 2 - 1;
+}
+write (i );
+

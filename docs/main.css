@@ -1,0 +1,44 @@
+@charset "utf-8";
+
+body {
+	font-family: Geneva, Arial, Helvetica, sans-serif;
+	font-size: 1em;
+	font-style: normal;
+	font-weight: normal;
+	color: #333333;
+	background-color: #FFFFFF;
+	margin:30px;
+}
+
+h1, h2, h3, h4, h5 {
+	font-family: Georgia, "Times New Roman", Times, serif;
+	font-weight: normal;
+}
+
+h1 {
+	font-size:3em;
+}
+
+h2 {
+	margin-top:2em;
+	font-size:2em;
+}
+
+h3 {
+	margin-top:1.5em;
+	font-size:1.5em;
+}
+
+h4 {
+	font-size:1.2em;
+}
+
+a, a:visited, a:link, 
+div.pre a, div.pre a:visited, div.pre a:link {
+	color: #1b8dc1;
+}
+
+p {
+	line-height:1.25em;
+}
+

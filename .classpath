@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="edu/tum/cup/old/|edu/tum/cup2/parser/LRParser_ComplexInsert_NoInit_NoSideEffectsAllowed.java|edu/tum/cup2/parser/LRParser_Inserting (complex maybe).java|edu/tum/cup2/parser/LRParser_ComplexInsert_NoInit_NoSideEffectsAllowed_NoInsertedScannerToken.java" kind="src" path="src"/>
+	<classpathentry excluding="edu/tum/cup2/generator/LR0GeneratorTest.java|edu/tum/cup2/io/LRParsingTableTest.java|edu/tum/cup2/test/errorRecovery/Aufgabe14_BestError.java|edu/tum/cup2/generator/TranslatedCSpec.java" kind="src" path="test"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="ant.jar"/>
+	<classpathentry kind="lib" path="lib/junit.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

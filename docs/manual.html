@@ -1,0 +1,1433 @@
+<html>
+	<head>
+		<title>CUP2 User Manual</title>
+
+		<script type="text/javascript" src="scripts/shCore.js"></script>
+		<script type="text/javascript" src="scripts/shBrushJava.js"></script>
+		<script type="text/javascript" src="scripts/shBrushPlain.js"></script>
+		<script type="text/javascript" src="scripts/shBrushXml.js"></script>
+		<link type="text/css" rel="stylesheet" href="main.css"/>
+		<link type="text/css" rel="stylesheet" href="styles/shCore.css"/>
+		<link type="text/css" rel="stylesheet" href="styles/shThemeDefault.css"/>
+		<link type="text/css" rel="stylesheet" href="styles/SD_Positioning.css"/>
+		<script type="text/javascript">
+			SyntaxHighlighter.config.clipboardSwf = 'scripts/clipboard.swf';
+			SyntaxHighlighter.all();
+		</script>
+
+	</head>
+	<body>
+
+		<h1>CUP2 User Manual</h1><br />
+
+	<p><b>
+	This manual describes the basic operations and use of
+	CUP2.<br/>
+	For any problems or questions about CUP2 please
+	contact <a href="cup2@mailseidl.informatik.tu-muenchen.de">cup2@mailseidl.informatik.tu-muenchen.de</a>.</b></p>
+	
+	<toc/>
+
+
+
+
+
+		<chapter>About CUP2</chapter>
+
+		<p>CUP2 is a system for generating parsers from concise
+		specifications. CUP2 is completely written in Java and
+		combines the algorithmic ideas from its predecessor <a
+		href="http://www2.in.tum.de/projects/cup/">CUP</a>
+		with the features of modern Java. 
+		</p>
+
+		<p>While CUP supports LALR(1) only, CUP2 includes
+		LR(0), LR(1) and LALR(1) out of the box and allows easy
+		extensions for other grammar classes.</p>
+
+		<p>Unlike many other traditional parser generators
+		(also including CUP) CUP2 does not create parser
+		source code based on a separate grammar definition language,
+                but uses Java API calls combined with data structures
+		to represent grammar-related information. This means, there is no
+		special language to define grammars and semantic
+		actions, but everything is done in pure Java. Even more, CUP2
+                disclaims of generating a parser as a source code file, but
+		rather produces a stream of serialised Java code,
+		which can then be loaded by the CUP2 runtime classes.</p>
+<!--
+		<p>CUP2 started as a Bachelor's Thesis by Andreas Wenger at
+		the TUM in 2009. In the following, CUP2 was extended at TUM
+                by Stefan Dangl, Michael Hausmann, Daniel Altmann and Andreas 
+                Wenger in a practical course with advice from Michael Petter
+                and Andrea Flexeder.</p> 
+-->
+		<chapter>Short Guide: Introduction</chapter>
+
+		<p><i>Note: To understand the following short guide, you
+		should have a basic understanding of context-free grammars and
+		what a parser generator is used for. If not, please consider
+		reading introductory texts like 
+		<a href="http://books.google.de/books?id=n3eVQgAACAAJ">Aho,
+                Sethi and Ullmann's "Compilers: principles, techniques, and tools"</a>,
+		<a href="http://books.google.de/books?id=JNs6fWkJZbAC">Andrew 
+		W. Appel's "Modern compiler implementation in Java"</a>
+                or the Wikipedia articles about
+                <a href="http://en.wikipedia.org/wiki/Context_free_grammars">
+                context-free grammars</a> and
+                <a href="http://en.wikipedia.org/wiki/Compiler-compiler">
+                compiler-compilers</a> before.</i></p> 
+
+		<p>This short guide presents how to use CUP2 to create
+		a parser for your language by means of a simple
+		example. In this example we implement a 
+		grammar for arithmetic expressions by first setting up the
+		CUP2 environment, and then specifying a CUP2 grammar based on
+		a grammar for arithmetic expressions. Finally,
+		we define the semantic actions of the parser, producing a syntax
+		tree representation of expressions. Finally the parser
+		is created and deployed. You can download the complete
+		example from <a href="https://versioncontrolseidl.in.tum.de/parsergenerato\
+rs/cup2/tree/master/docs/res"> the repository</a>.</p> 
+
+		<p><em>Prerequisites:</em> The only thing you need to
+		download is the recent CUP2 release. It works on any Java 1.5
+		compatible development kit. For this introductory example, it
+		is sufficient to download the plain cup2gen.jar file containing the
+		pre-built binaries. Then, you only have to include the
+		cup2gen.jar file into your classpath.</p>  
+
+		<section>Defining the Grammar</section>
+
+		<p>CUP2 uses Java data structures for defining a grammar
+		specification. In CUP2, a specification class must be created,
+		extending the <code>edu.tum.cup2.spec.CUPSpecification</code>
+                class.</p> 
+
+		<javacode src="res/SampleSpec.java" from="15" to="16"/>
+
+		<p>The classical grammar for simple arithmetic
+		expressions over integers in
+		BNF, obeying the operator precedence rules, might look
+		like:</p>
+
+		<pre class="brush: plain;">e &#8594; e + t | t
+t &#8594; t * f | f
+f &#8594; ( e ) | NUMBER</pre>
+
+		<p>To specify a parser based on this grammar, our
+		first step is to declare the symbols of the
+		alphabet for our grammar in CUP2. For
+		defining <b>terminal</b> and <b>non-terminal</b> symbols, we have to
+		declare two enums within our class which <b>must</b> be
+		called <code>Terminals</code> and <code>NonTerminals</code>, 
+		implementing the <code>Terminal</code>
+		and <code>NonTerminal</code> interface from
+		the <code>edu.tum.cup2.grammar</code> package.</p> 
+
+		<javacode src="res/SampleSpec.java" from="19" to="29"/>
+
+		<p>In general a grammar consists of a list of
+		<b>productions</b>. Such productions are created by calls to
+		the <code>prod</code> method, which is provided by
+		CUP2. 
+		The <code>prod</code> method expects a non-terminal
+		(the left-hand side) and for each alternative  
+		right-hand side a list of symbols, grouped via
+		the <code>rhs</code> method.  
+                Finally the productions, created in this way, are declared as
+		grammar by passing them as parameters to a call of the 
+                <code>grammar</code> method from the constructor of our parser
+                class: </p> 
+
+		<javacode src="res/SampleSpecNoActions.java" from="41" to="48"/>
+
+		<section>Semantic Actions</section>
+
+		<p>So far, our parser generated for the specification
+		above only indicates success or failure of a parse,
+		i.e. it accepts those words which can be
+		created by this	grammar and throws an exception if the word cannot be
+		generated by this grammar. The next step consists in telling the
+		parser, how to build a syntax tree from these productions. To
+		achieve this, each production can be extended by <b>semantic
+		actions</b>. These actions are called whenever the
+		corresponding production is reduced. The return value of such an action is
+		then associated with the production's left-hand side. 
+                For example, let the parser run on a
+		sequence of symbols like <code>e + t</code>. We then want to
+		obtain an instance like <code>new
+		BinaryExpression(e,Operators.PLUS,t)</code>. As there may exist
+		different variants for a production's right hand sides, there
+		may be different actions, providing different return values
+		for a non-terminal. The type of a symbol thus needs to
+		be general enough, to permit all possible variants. We need to
+		specify this type for each symbol (with a value) in the body of our parser class:</p>
+		
+		<javacode src="res/SampleSpec.java" from="32" to="35"/>
+
+		<p>For each symbol with a value, create an instance of
+		the <code>edu.tum.cup2.semantics.SymbolValue</code> class,
+		parametrised with the appropriate value class. The name of this
+		instance must be exactly the same as the symbol
+		(case-sensitive). In our example, neither the terminals <code>PLUS</code>, 
+                <code>TIMES</code> nor the parentheses
+                (<code>LPAREN</code>,<code>RPAREN</code>) carry any
+                values, so they are omitted in the type declaration. 
+                We declare that <code>NUMBER</code> carries
+                integer values (as line 32 illustrates). 
+		All our non-terminals and consequently our productions
+                are based on a common
+                class <code>Expression</code> (cf. lines 33-35).
+		<!--TODO: which is assigned as a
+                specialised version in the actions-->. For this
+                consider the following listing:</p>
+		
+		<javacode src="res/SampleSpec.java" from="41" to="60"/>
+		
+		<p>Let us look at lines 42 to 44 in more detail. We
+		extend the parameters of the production method by instances
+		of the <code>edu.tum.cup2.semantics.Action</code> class. This
+		class allows to specify a method <code>a</code>, 
+                which provides the semantic action code, which is executed, when the
+		previously specified <code>rhs</code> block is reduced. 
+                For each non-terminal of the corresponding <code>rhs</code> 
+                which has been assigned a type via the <code>SymbolValue</code>
+                class, there must be a corresponding formal parameter
+		of <code>a</code>. In our case, we have e.g. the non-terminals 
+                <code>e</code> and <code>t</code>, which lead to parameters of
+		the same name and are of type <code>Integer</code> since they are
+		specified as <code>SymbolValue&lt;Integer&gt;</code>. The
+		<code>PLUS</code> terminal was not declared to carry
+		a value and thus it is omitted in the parameter list of <code>a</code>.
+		</p> 
+		
+		<section id="Creating and Using the Parser">Creating and Using the Parser</section>
+		
+		<p>CUP2 is not really a "parser generator", since it does not
+		generate parser source code. Instead, it generates a parsing
+		table which is then processed by a parsing table interpreter,
+		acting as a general parser-driver.</p> 
+		
+		<p>Thus, first we have to create the parsing table and
+		then we are able to initialise the parser with
+		it. This is shown in the following
+		listing. Since we do not want to re-compute the parsing table
+		each time before we initialise the parser, the parsing table can
+		be serialised to a file, as shown in section <ref to="Creating the Parser Driver"/>.</p> 
+		
+		<javacode src="res/createparser.java"/>
+		
+		<p>Now, we can feed the parser with input data. In most cases,
+		we will link a lexer generated by a scanner generator to the
+		parser, like in the following listing (see section
+		<ref to="Scanner Interface"/> for more information how to
+		connect a scanner like JFlex to CUP2).</p> 
+		
+		<javacode src="res/useparser.java"/>
+		
+	<chapter id="Usage">CUP2 in Depth</chapter>
+        <p>Next we present a complete
+        description of all parts of a CUP2 parser specification. A
+        complete parser specification is a subclass
+        of <code>CUP2Specification</code> which consists of 
+          <ul> 
+            <li>Symbol Declarations</li> 
+            <ul>
+            <li>classifying symbols as terminals or non-terminals</li>
+            <li>types for symbols</li>
+            </ul>
+            <li>a Grammar Specification with</li>
+            <ul><li>Production declarations</li>
+              <li>Action codes</li>
+              <li>Precedences</li>
+            </ul>
+          </ul>
+        </p> 
+
+	<p><em>Installation:</em> To use all features of CUP2 within
+	your Java application, you only have to include
+	the <code>cup2gen.jar</code> file into your classpath. </p>
+
+	<section>Specifying the Parsing Rules</section>
+        <subsection id="Symbol declaration">Symbol Declarations</subsection>
+		<p>First, you have to define the terminal and non-terminal symbols
+		occurring in the productions of your grammar. Terminal
+		symbols are those tokens, from which the input of the parser is
+		composed of and they are in generally produced by a lexical
+		analyser. The non-terminal symbols are the inner nodes of the
+		parse tree. As each subtree of depth 1 of the parse tree
+		corresponds to a production of the grammar, we have to use a
+		non-terminal symbol as a left-hand side symbol for each
+		production. Before usage, each of these symbols has to be
+		declared in Java. This is achieved by creating a new enum
+		called <code>Terminals</code> (implementing
+		the <code>Terminal</code> interface) and another 
+		enum called <code>NonTerminals</code> (implementing
+		the <code>NonTerminal</code> interface) within Your CUP2
+		specification class, each of them containing the particular
+		symbol names. It doesn't matter whether the symbols consist of
+		uppercase or lowercase letters. Here is an example of such two
+		enums:</p>  
+
+		<javacode src="res/SampleSpec.java" from="19" to="29"/>
+                
+                <p><em>Technical remark:</em> It is mandatory to name the two
+		enums precisely <code>Terminals</code> and <code>NonTerminals</code>.
+		CUP2 uses reflections to search for enums of these names to
+		learn about the symbol names of the grammar.</p>
+
+
+                <p>The specification of the symbols above provides names
+                for symbols, which can be used within productions. 
+		Note that with CUP2 it is possible to
+                associate a class type with each symbol. Terminal
+                symbols (created by a scanner) can carry a
+                value, while non-terminal symbols can
+                be filled with information obtained during the parse run. To
+                declare a type for a symbol, You have to declare inner
+                classes within Your CUP2 specification, each of them named
+                exactly the same as the enums in the symbol specifications
+                above. Each such class must inherit from
+                the <code>SymbolValue</code> class which is parametrised with
+                the actual type of the symbol.                
+                You can see an example of such a type assignment here:
+                </p>
+		
+		<javacode src="res/SampleSpec.java" from="32" to="35"/>
+
+                <p><em>Technical remark:</em> Again, it is mandatory to use
+		exactly the same names here, as You did when specifying the
+		symbols within the two enums <code>Terminals</code>
+		and <code>NonTerminals</code>. CUP2 uses reflection to
+		recognise the names of the symbols.
+                </p>
+		
+		<subsection id="Defining Grammar" >Defining Grammar Rules</subsection>
+
+		<p>A grammar consists of a set of productions. Each production
+		has a left-hand side non-terminal and a list of right-hand
+		side symbols. This hierarchy is reflected in the class
+		hierarchy of the CUP2 library classes. CUP2 provides the
+		classes and interfaces <code>Grammar</code>, <code>Production</code>,
+                <code>Symbol</code> (either <code>Terminal</code> or 
+                <code>NonTerminal</code>) to represent grammars. When defining
+		the grammar, we create productions out of left- and right-hand
+		sides and add them to the CUP2 grammar specification. You can
+                instantiate these classes manually, using their constructors,
+                or more conveniently use the provided builder methods of the
+		CUP2 specification class, as described in the
+		following. Next, we want to define the following
+		grammar for arithmetical expressions in CUP2: </p>   
+		
+		<pre class="brush: plain;">res &#8594; expr SEMI
+expr &#8594; NUMBER
+expr &#8594; expr PLUS expr
+expr &#8594; expr TIMES expr
+expr &#8594; LPAREN expr RPAREN</pre>
+
+		<p> We now use the builder methods <code>grammar</code>, 
+                <code>prod</code> and <code>rhs</code> to first group the
+		right-hand side symbols of a production and then pass this
+		production to the grammar. The constructor of the CUP2
+		specification is as follows:</p>
+
+		<javacode src="res/SampleSpecNoActions_LongProd.java" from="46" to="52"/>
+		
+		<p>Apart from this direct transfer from grammar to code, we
+		may also join the productions with the same left-hand side to
+		a single production with multiple variations of right hand sides:</p> 
+		
+		<javacode src="res/SampleSpecNoActions_LongProd.java" from="54" to="60"/>
+
+
+		<subsection id="Semantic Actions">Assigning Semantic Actions to Rules</subsection>
+
+		<p>A parser, constructed by the so far introduced productions
+                is fully functional, i.e. indicates a successful parse run or
+                a failure. In order to compute any value or to construct any
+                representation of the parser's input, we need to equip the
+                parser with <em>semantic actions</em>. Semantic actions in
+                CUP2 are Java methods that contain code which is executed
+                every time the parser decides to reduce the so far recognised
+                symbols according to one of its rules. A semantic action for
+                CUP2 is specified as an anonymous subclass of
+                the <code>Action</code> class, providing the
+                method <code>a</code>. 
+		  The parameters of <code>a</code> represent
+                the right-hand side symbols of a production, while its return
+                type must match the type associated with the production's
+                left-hand side. Such semantic actions are declared as
+                parameter to the <code>prod</code> builder method, directly
+                following the <code>rhs</code> they belong to. Consider
+                the following example for a semantic action, which is provided
+                for the production <code>expr &#8594; expr PLUS
+                expr</code> :</p> 
+
+                <javacode src="res/semAct_simpleShiftAction.java" from="29" to="40"/>
+
+                <p> Note that the types of the parameters <code>a</code> and <code>b</code>
+                must match the types they have been associated with
+                in the symbol declaration step. Also note that symbols without
+                an associated type (like <code>PLUS</code> in the upper
+                example) do not occur in the parameter list of an action.</p>
+                
+                <p> It is not very common that there exists the need for semantic
+                actions, before the sequence of symbols of a right-hand side
+                of a production is recognised completely. In these cases, CUP2
+                permits the use of so-called <em>inner actions</em>. 
+                In contrast to ordinary actions, inner actions are not
+                triggered when a production is reduced, and thus it has to be
+                flagged, at which position within the sequence of right-hand
+                side symbols this action has to be triggered.
+                An inner action is marked with the special
+                terminal <code>$a</code>. The type of this terminal is
+                determined by the type of the production's left-hand
+                side. It may be accessed in the action code of later occurring actions
+                which are part of the production. Therefore consider
+                the following example:</p> 
+
+                <javacode src="res/semAct_simpleShiftAction.java" from="2" to="28"/>
+
+    <p>
+    <i>For more examples have a look at edu.tum.cup2.test.semanticShiftActions.*</i>
+    </p>
+
+    <p>
+    <em>Technical remark:</em> The parser generator does not create inner
+    actions as special cases, but emulates them with ordinary reduce
+    actions. For every semantic shift action <code>X</code> indicated
+    by the special terminal <code>$a</code>, 
+    an auxiliary non-terminal <code>HX</code> is created which then replaces <code>$a</code>.
+    An additional auxiliary production <code>HX &#8594; &#949;</code> is created and
+    assigned to a semantic reduce action which contains the code of the
+    semantic shift action <code>X</code>. Note that using inner actions, different variants
+    of the right-hand side may lead to <em>shift reduce conflicts</em>.
+    </p>
+
+    <!-- Ich finde diesen Teil nicht wirklich angebracht in der
+    Benutzerdoku. Das is mehr was fuer Entwicklerdokumentation: This mechanism
+    ensures not only that, if the decision on which semantic shift-action to
+    execute can not be made at a point during parsing,  shift-reduce-conflicts
+    and reduce-reduce-conflicts for semantic actions are thrown during
+    parser-generation.   More importantly it ensures a correctly ordered
+    execution of all semantic actions with least overhead. 
+
+    <p>Let's view an example, which is invalid for this mechanism:
+    The LR1-parser-generator can not consider the semantic action $a,
+    because it is just as valuable as an &#949;.
+    </p>
+
+    <pre class="brush: plain;">S &#8594; 1 $a x y ;
+S &#8594; 1 x z ;</pre>
+
+    <p>Thus this results is a shift-reduce conflict between the productions
+    "S &#8594; 1 &gt;$a&lt; . x y" and "S &#8594; 1 . x z" under terminal "x", as $a has been replaced by an auxiliary non-terminal.
+    </p>
+    -->
+
+    <p>
+    <em>Technical remark:</em> CUP2 tries to verify that actions match the
+    productions they are associated with. First, CUP2 compares the
+    number of supplied arguments to the number of symbols which are associated
+    with types (and thus can hold values). In more detail, CUP2 checks,
+    whether the action parameters and return types match with the types,
+    associated with the symbols. However, as the type information is checked at
+    runtime, CUP2 cannot distinguish between generic types
+    (i.e. <code>List&lt;String&gt; == List == List&lt;Integer&gt;</code>) in the current version.
+    </p>
+    <subsection>Eliminating Ambiguities in Productions</subsection>
+		
+    <p>Experienced users will have already noted a problem with the
+    example grammar from section <ref to="Defining Grammar" />: It is
+    <em>ambiguous</em>. An ambiguous grammar is a grammar which, given
+    a certain input, can reduce the parts of the input in two 
+    different ways such as to give two different answers. Take the grammar
+    from section <ref to="Defining Grammar" /> for example, given the
+    following input: <code>3 PLUS 4 TIMES 5</code>. The grammar can either create an
+    expression tree evaluating to <code>35</code> or to <code>23</code>,
+    depending on which sub-expression is evaluated first. Such ambiguities
+    result in so-called <em>shift-reduce</em> or <em>reduce-reduce</em>
+    conflicts. In our example, creating a parser with the naive grammar will
+    yield a shift-reduce conflict. This results from: under the
+    symbol <code>TIMES</code>, the parser is not able to decide,
+    whether to shift the symbol <code>TIMES</code> onto the stack or 
+    whether to reduce <code>3 PLUS 4</code>. Thus, when the parsing
+    table has to be generated, an exception occurs: 
+    a <code>ShiftReduceConflict</code> is thrown.</p> 
+
+    <p>However, CUP2 offers a construct for a useful parsing with ambiguous grammars,
+    by specifying <em>precedences</em> and <em>associativities</em> of
+    particular terminal symbols. 
+    These precedences can be seen as advice, which transition in the automaton
+    has to be preferred when creating the parsing table. <em>Precedences
+    resolve shift reduce conflicts.</em>  
+    In our example, specifying <code>TIMES</code> to have a higher precedence
+    than <code>PLUS</code> would solve these conflicts, as the
+    multiplication will be performed before the addition. 
+    Consequently, in case of a shift reduce conflict the parser
+    determines whether the terminal to be shifted has a higher
+    precedence or if the production to reduce has a higher
+    precedence. In the first case the terminal is shifted, otherwise a
+    reduce is performed. 
+    However, there is still a problem if the terminals have equal
+    precedence. 
+    Let us take the input <code>3 PLUS 4 PLUS 5</code> as an example.
+    We overcome this by specifying the <em>associativity</em> of a
+    terminal symbol, which are also used to resolve shift reduce
+    conflicts. 
+    When using <em>left</em> associativity, the leftmost occurrence of the symbol is
+    reduced first, i.e. <code>3 PLUS 4</code> is preferred. When using <em>right</em>
+    associativity <code>4 PLUS 5</code> is the preferred reduction,
+    i.e. that it is shifted onto the stack, hence, the reductions will
+    take place from right to left.
+    <em>nonassoc</em> states that there is no associativity for terminals with
+    a certain precedence (e.g. for a compare operation like <code>3 == 4 ==
+    5</code>) TODO: Does this make sense? <!-- TODO: das beispiel verstehe
+    ich nicht -->
+    If there are two consecutive occurrences of terminals with equal precedence
+    and the associativity <em>nonassoc</em>
+    a <code>ConsecutiveNonAssocException</code> is thrown.
+    
+    Summarising, we have three different kinds of associativity in CUP2:
+    <ul>
+      <li>left</li>
+      <li>right</li>
+      <li>nonassoc</li>
+    </ul>	
+    </p>
+	
+    <p>In order to specify precedences and associativities in CUP2, the
+    <code>precedences</code> method in the constructor of the
+    specification class has to be called.
+    The <code>precedences</code> methods gets passed (multiple) associativities of symbols.
+    Their order in the parameter list determines the precedences of the symbols.
+    Conveniently, associativities of symbols are obtained through return values
+    of calls to <code>left</code>, <code>right</code>
+    or <code>nonassoc</code>.
+    These methods will internally create the appropriate associativity class, e.g. <code>LeftAssociativity</code>. 
+    For an example on how to specify precedences and
+    associativities, consider the following code: </p>
+
+    <javacode src="res/SampleSpecNoActions_LongProd.java" from="40" to="43"/>
+		
+    <p><em>Technical remark:</em> The following diagram shows the
+    classes used to implement precedences and associativities and
+    their relation. 
+    </p>
+    
+    <img src="res/PrecedencesAndAssociativitiesClasses090824.png" />
+
+
+  <section id="Scanner Interface">Connecting Syntactical and Lexical Analysis</section>
+  <p> CUP2 concentrates on syntactical analysis only. Thus, it does not read
+  raw character input from files directly. Instead, CUP2 expects a lexical
+  analyser to split the raw input into tokens (such as keywords,
+  numbers and special symbols), annotated with further
+  information, e.g. the value of an integral constant. This task is in general
+  performed by a <em>scanner</em>. CUP2 offers a concise interface for
+  scanners. This interface can either be implemented by hand or one can take
+  one of the established scanner generators like <a href="http://jflex.sf.net">JFlex</a>. 
+  JFlex is a well-known scanner generator written in Java and works with CUP2 smoothly.</p>
+
+  <subsection id="General Scanner Interface">General Interface</subsection>
+
+  <p>Connecting a scanner to CUP2 is simple. The scanner class must
+  implement the interface <code>edu.tum.cup2.scanner.Scanner</code>, which
+  consists of the single method:</p> 
+
+  <javacode src="res/Scanner.java" from="12" to="12" />
+
+  <p>Each time CUP2 needs to process a new symbol,
+  the <code>readNextTerminal</code> method of the scanner is called. The scanner has to return
+  the next terminal in the input stream, possibly annotated with a value. This is
+  dependent on whether the terminal symbol was declared to carry data or not
+  within your grammar specification in section <ref to="Symbol declaration" />. For instance, if You use a
+  <code>SymbolValue&lt;Integer&gt;</code> for the <code>NUMBER</code>
+  terminal from the above example, an integer value <em>must</em> be
+  assigned to each <code>NUMBER</code> terminal which is returned to the parser.</p> 
+
+  <p>Symbols are instances of
+  the <code>edu.tum.cup2.scanner.ScannerToken&lt;T&gt;</code> class,
+  parametrised by the class <code>T</code> of the value associated with the
+  symbol (or <code>Object</code> for tokens with no value) 
+  <span style="color:red;">GOON: create static factory methods</span>. Consider
+  the following example, assuming that <code>NUMBER</code> has a value
+  but <code>PLUS</code> does not: </p>
+
+  <javacode src="res/tokenexample.java" from="1" to="2"/>
+
+  <p> CUP2 supports to annotate line and column information for each
+  symbol. This allows to generate more verbose and informative error messages
+  for the CUP2 framework when parsing fails:</p> 
+
+  <javacode src="res/tokenexample.java" from="4" to="5"/>
+
+  <subsection id="JFlex">Generating Parsers with JFlex</subsection>
+
+  <p>The easiest way to create a scanner for CUP2 parsers is using
+  the <a href="http://www.jflex.de/">JFlex</a> tool. For a general
+  introduction please refer to the <a href="http://www.jflex.de/manual.html">JFlex
+  User's Manual</a>.</p> 
+		
+  <p>Here is a sample JFlex specification for our example:</p>
+		
+  <javacode src="res/SampleSpecScanner.jflex"/>
+		
+  <p>There are basically three things you should notice when writing a specification for CUP2:</p>
+  <ul>
+    <li>Before the first <code>%%</code> you should define your package and
+    the needed imports. In most cases, these are just the static imports of
+    your terminals and non-terminals. You can also add your class comment
+    here.</li> 
+    <li>In the second part, just name your class after <code>%class</code> and
+    add the <code>%cup2</code> option. This automatically adds support for
+    Unicode, line numbering and column numbering as well as the correct
+    interface to the CUP2 scanner and some convenience methods which we will
+    use in the third part.</li> 
+    <li>In the last part, define the token classes as described in the JFlex
+    manual. You can use the <code>token</code> factory methods to create the
+    terminal symbols for CUP2. There are two versions of <code>token</code>:
+    The first version expects a terminal as its single parameter and is used
+    for terminals with no semantic value. The other version, shown in line 19,
+    has a second parameter which contains the semantic value of the terminal.</li> 
+  </ul>
+		
+  <p>Using this specification, you can create your scanner class by simply
+  calling <code>java -jar JFlex.jar <i>MyScanner.jflex</i></code> or using the
+  appropriate ANT task. Finally, add this class to your classpath and you're
+  done.</p>  
+
+
+
+    <section id="Creating the Parser Driver">Running the Parser</section>
+    <p>
+    After the previous sections, You created a CUP2 specification ready to be
+    transformed into a parser. A CUP2 parser works with a static code part which
+    executes the main parser driver. This parser driver is in practice parametrised
+    with the concrete parsing table of the particular parser and the class
+    files, containing the grammar and action specifications. In order to parse
+    a file with CUP2, You have to
+    </p>
+    <ol>
+      <li>Instantiate a parser generator with an algorithm of Your choice</li>
+      <li>Create a parse table from Your specification with this generator</li>
+      <li>Feed the parser driver with this parse table</li>
+      <li>Run the parse driver on the input</li>
+    </ol>
+    <p>
+    Since generating the parsing table is in general a costly
+    operation, You may want to perform this task only once in advance and just
+    use the generated parsing table. This is possible, if You serialise Your
+    parsing table. Furthermore, You may not want to actively write a Java program
+    just to compile the CUP2 specification into the parse table and save it. In
+    this case, You can resort to the provided ANT task. <!-- TODO
+    reference to ant task -->
+    </p>
+
+    <subsection>Manual Creation</subsection>
+
+    <p>
+    CUP2 contains different generator algorithms based on LR-parsing:
+    <!-- TODO reference to LR parsing algorithms-->
+    <ul>
+      <li><code>edu.tum.cup2.generator.LR1Generator</code></li>
+      <li><code>edu.tum.cup2.generator.LR1toLALRGenerator</code></li>
+      <li><code>edu.tum.cup2.generator.LALR1Generator</code></li>
+      <li><code>edu.tum.cup2.generator.LR0Generator</code></li>
+    </ul>
+    They all produce <code>LRParsingTable</code> objects which are compatible
+    with the parser driver <code>edu.tum.cup2.parser.LRParser</code>. This
+    parser driver, equipped with a parsing table, can then be used to parse
+    arbitrary inputs. The following example runs a parser based
+    on <code>your.path.SampleSpec</code> on a token stream, provided
+    by <code>MyScanner</code> (c.f. section <ref to="Scanner Interface" />):
+    </p>
+		
+    <javacode src="res/parsercreation1.java"/>
+		
+    <p>
+    In most applications, You will separate the parsing table generation
+    process from the application of the finished parser. This can be
+    achieved by using serialisation to e.g. dump the parse table into a file and reload it
+    when using the parser. This can be realised by:</p>
+		
+    <javacode src="res/parsercreation2.java"  from="2" to="13"/>
+
+    <p>
+    You can now reload the parse table from the file and use it to parse
+    arbitrary inputs:
+    </p>
+    <javacode src="res/parsercreation2.java"  from="21" to="30"/>
+		
+    <p> <em>Technical remark:</em> Since the specification is not
+    compiled any more, the amount of classes delivered in the final
+    form can be reduced from the whole package <code>cup2gen.jar</code> to
+    just <code>cup2parser.jar</code>.</p> 
+
+    <subsection>Integration in the Build Process</subsection>
+		
+    <p>CUP2 can be integrated into the build process of a project via its
+    integrated <a href="http://ant.apache.org">ANT</a> task. This task allows
+    to generate parsing tables from existing CUP2 specifications.
+    At first, You have to register the CUP2 task in Your ANT script,
+    which can be done as follows:</p>
+	
+    <xmlcode src="res/build.xml" from="5" to="7" />
+
+		
+    <p>You can integrate the CUP2 task inside an ANT target to produce a parse
+    table, as in the following example:</p>
+  		
+    <xmlcode src="res/build.xml" from="26" to="33"/>
+    
+    <p>TODO: This is going to be messy! All this is not implemented correctly
+    yet! <br/> The absolute minimum of information to be provided is:
+      <ul> 
+	<li>Attribute "specification": The fully qualified name of the
+	CUP2 specification for which to generate a parse table</li>
+	<li>Attribute "parsetable": The name of the file for the parse
+	table</li>
+	<li>Nested tag "classpath":  The path where to search for the CUP2 specification</li>
+      </ul>
+    The further possible options are:
+      <ul> 
+	<li>Attribute "parsetableHtml": name of the file for the parse
+	table dump
+	as HTML</li>
+	<li>Attribute "automatonGraphviz": name of the file for the graphviz automaton dump</li>
+	<li>Attribute "verbose": values are "on" or "off"</li>
+	<li>Attribute "algorithm": values are: "lr1"|"lr0"|"lalr1" or an
+	arbitrary fully qualified name of a generator algorithm class.</li>
+      </ul>
+    TODO:But this is still not implemented correctly.</p>
+
+    <section>Handling Input Errors</section>
+    <p> A final important aspect of building parsers with CUP2 is
+    support for <em>syntactic error recovery</em>. The parsers we built so far work
+    well until the parser reaches a symbol which it did not expect. In
+    these cases an unprepared parser simply stops with an
+    exception. It would be more useful if the parser tries to continue
+    parsing at a point, where it is sure what is meant or even tries to give
+    hints, how to correct the input.</p>
+
+    <subsection id="Error Productions">Resume Parsing after Syntactical Errors</subsection>
+
+    <p>
+    One approach to recover from an erroneous symbol sequence consists
+    in <em>error-handling productions</em>. In particular, CUP2 supports a special error
+    symbol (denoted simply by <code>error</code>). This symbol plays the role
+    of a special non-terminal which, instead of being defined by productions,
+    matches an erroneous input sequence. <br/>
+    The error symbol only comes into play, if a syntax error is detected. If a
+    syntax error is detected, then the parser tries to replace some portion of
+    the input token stream with <code>error</code> and then continue
+    parsing. For example, we might have productions like:
+    </p>
+    <pre class="brush: plain;">s &#8594; &#949; 
+s &#8594; expr SEMI s
+s &#8594; error SEMI s
+expr &#8594; expr PLUS expr 
+expr &#8594; NUMBER 
+</pre>
+    <p>
+    This indicates that if none of the normal production for <code>s</code> can be
+    matched by the input, then a syntax error should be declared, and recovery
+    should be made by skipping erroneous tokens (equivalent with matching and
+    replacing them with <code>error</code>) up to a point at which parsing
+    can be continued with a semicolon (and additional context that legally
+    follows a statement). An error is considered to be recovered from if and
+    only if a sufficient number of tokens is past the <code>error</code>
+    symbol can be successfully parsed. (The number of tokens required is
+    determined by registering a <code>ParserInterface</code> as described in
+    section <ref to="Error Recovery"/>).
+    </p>
+
+    <p>
+    From the point of view of a grammar writer, there is even the possibility
+    to react to the case when a syntax error occurred. Error productions can
+    be also equipped with an action method, giving the program access to
+    an <code>edu.tum.cup2.semantics.ErrorInformation</code> object,
+    which contains information about the erroneous input fragment:
+    </p>
+
+    <javacode src="res/errRec_Aufgabe14_2.java" from="11" to="20"/>
+
+    <p>
+    The symbol <code>error</code> is always associated with the class
+    type <code>edu.tum.cup2.semantics.ErrorInformation</code>. It provides start-
+    and end-position of the whole erroneous symbol sequence as well as a set of expected symbols. 
+    It distinguishes between correctly read tokens, bad tokens and
+    the token which is responsible for getting the parser into an erroneous state (crash-token).
+    The crash-token is the first bad token or alternatively the part of some correct input following the error.
+    For example the erroneous input <code>NUMBER PLUS NUMBER NUMBER
+    SEMI</code> (which has no bad tokens) leads to an error covering 
+    the <code>expr</code> as correctly read token and the crash-position at the <code>NUMBER</code>.
+    Expected tokens: <code>PLUS, SEMI</code>.
+    <br />
+    As the computation of correctly read tokens requires some memory overhead,
+    it has to be enabled specifically when parsing by using the <code>saveTokens</code> parameter:
+    <pre class="brush: java;">parse( inputScanner, true )</pre>
+    </p>
+    
+    <subsection id="Token Completion">Correcting Input by Inserting Tokens</subsection>
+    <p>
+    Now, if the parser encounters an error, the only way to recover
+    consists in special error productions (see section <ref to="Error Productions" />) 
+    providing safe continue handles. This feature is called 
+    <em>phrase-based error recovery</em> and often widens the error in order to resume
+    parsing because of missing symbols. Instead of giving up parsing, one may
+    try to insert, replace or delete symbols in the input stream. 
+    </p>
+    <div class="SD_rightFloatImg_border" style="overflow:hidden; width:257;">
+      <img src="res/tokenInsertion_Minijava_exmpl - simple.png" /><br /><br />
+      <small>
+        <b>Repairing a file written in MiniJava: </b>
+        The original input is shown in black, orange tokens have been inserted, underlined text is covered by error productions.
+      </small>
+    </div>
+    <p>
+    The current version of CUP2 features an implementation of error recovery
+    via the insertion of tokens. This approach yields more detailed error
+    information while reducing the need for phrase-based error recovery.
+    Since tokens may carry a value, and the parser cannot automatically guess
+    what value would make sense for each particular token, the CUP2
+    specification provides a method to specify default values for freshly
+    inserted tokens via the <code>insert</code> method.
+    Let us have a look at the parameters of the method <code>insert(terminal[, repeat], proposals[, value])</code>:
+      <dl compact="compact">
+        <dt><code>terminal</code></dt>
+          <dd>Defines the terminals to be inserted. Non-terminals are not supported.</dd>
+        <dt><code>repeat</code></dt>
+          <dd>Optional parameter, which indicates how far this token must be away from another one of the same terminal.
+            The algorithm for token-insertion does not know the semantic background of the insertion and its choice depends
+            on the algorithm which generates the table. Although it tries to use as less tokens as possible, repetitions
+            might occur. Use this parameter if repetitions occur for a token. Use this feature sparely.
+          </dd>
+        <dt><code>proposals</code></dt>
+          <dd>An array of strings of significant proposals for the user, which e.g. might then be displayed as a drop-down menu in a GUI.</dd>
+        <dt><code>value</code></dt>
+          <dd>Optional parameter - if the token has a symbol-value-binding, a default value must be given.</dd>
+      </dl>
+    Consider the following example illustrating the usage of
+    method <code>insert</code>:
+    </p>
+    <javacode src="res/tokRec_SpecMiniJava.java" from="18" to="27" />
+    <p>
+      However, the technique of token insertion cannot arbitrarily guess identifiers,
+      or decide between alternative tokens without knowledge of the
+      idea behind the program (missing semantics). Thus, token insertion
+      does not always suffice to recover from an error, conserving the need
+      for error-productions.
+      <br />
+    </p>
+    <p>
+      <em>Attention:</em> To use token insertion for error recovery, CUP2
+      relies on the programmer to insert a further
+      attribute <code>insert</code> to the terminals in the following way:
+      <!-- javacode following a rfi--><p style="clear:right;"></p>
+    </p>
+      <javacode src="res/tokRec_SpecMiniJava.java" from="1" to="12" />
+    <p>
+     <em>Technical remark:</em> The class <code>InsertionScanner</code> is responsible for deciding which tokens to choose.
+      It uses the original scanner and the parsing table in order to create tokens.
+      More details on the algorithm and usage of the scanner can be found in chapter <ref to="Behind Token Completion" />.
+      When parsing repaired input, all observers are notified automatically.
+      <javacode src="res/tokRec_SpecMiniJava.java" from="34" to="39" />
+    </p>
+
+
+  
+
+	<chapter>Behind the Scenes</chapter>
+
+
+		<p>This chapter contains information for developers
+		that want to modify or extend CUP2. If you have any
+		questions or if you think that we should describe a
+		certain topic in more detail, please contact us!</p> 
+
+		<section>Adding New Generator Classes</section>
+
+		<p>
+		In order to add your own parser generator class to CUP2 you have to insert your 
+		parser generator in the generator class hierarchy. (see section <ref to="genClassHier"/>) 
+		
+		This means that your parser class has to be a subtype of the class <code>Generator</code>, either directly or
+		by being derived from another class that is a <code>Generator</code> subtype.
+		When creating a generator for an LR parser (or a
+		parser based on a related algorithm) it is recommended 
+		to subclass the class <code>LRGenerator</code>. 
+		</p>
+		
+		<subsection>Creating a generator class for an LR
+		parser (or related parsing algorithms)</subsection>
+		<p> To create such a generator, derive your own generator class from <code>LRGenerator</code>. 
+		The main parts of the <code>LRGenerator</code> class are its constructor and the following template methods that 
+		a custom parser generator class should override. Those methods are used in the constructor of the <code>LRGenerator</code> class
+		to generate the parsing table for the parser.
+		</p>
+		
+		<ul>
+		<li> <code>public Automaton&lt;I, S&gt; createAutomaton()</code>
+		</li>
+		<li> <code>protected abstract S createStartState()</code>
+		<p> creates and returns the start state;
+			This is the item which consists of the start production at position <em>0</em>.</p>
+		</li>
+		<li> <code>protected abstract void createReduceActions(LRActionTable actionTable, I item, LRParserState state) </code>
+		<p>
+		fills the given <code>LRActionTable</code> with reduce actions, using the
+		given non-shiftable item and its parent parser state;
+		</p>
+		</li>
+		</ul>
+		
+		<p>
+		The constructor of <code>LRGenerator</code> is passed 
+		to the CUP2 specification for which to generate a parser and furthermore the verbosity (how many debug messages are printed)
+		and a boolean flag that is used to indicate whether
+		the grammar should be extended have to be
+		specified. It is recommended to provide a constructor
+		in your own parser generator class that also gets passed this information
+		and passes it further to the <code>LRGenerator</code>
+		constructor. (Additionally it is useful to provide some
+		kind of convenience constructors which pass default
+		parameters to the <code>LRGenerator</code>
+		constructor. Consider e.g. <code>LALR1Generator.java</code>.)
+		</p>
+		
+		<p>
+		The method <code>createAutomaton</code> returns an automaton for the grammar. For a separation of concerns
+		in CUP2 there is a separate class hierarchy for <code>Automaton Factories</code>. The root of this hierarchy is the class
+		</p>
+		<code>AutomatonFactory&lt;I extends Item, S extends State&lt;I&gt;&gt; </code>. 
+		
+		<p>
+		These classes contain code to create the automaton for an <code>LRGenerator</code>. The automaton is similar to a canonical automaton for the grammar.
+		(The states of such an automaton contains the kernels of the states for the canonical automaton that can be extended with the method <code>closure</code> to
+		obtain all the states of the canonical automaton.)
+		</p>
+		<p>
+		In the current version of CUP2 there are three different concrete <code>Automaton Factories</code> (<code>LR0AutomatonFactory, LR1AutomatonFactory, LALR1AutomatonFactory</code>).
+		Each of them creates a different type of automaton for a certain kind of LR parser.
+		</p>
+		
+
+		<section id="Error Recovery">Error Recovery</section>
+
+    <p>
+    Any parser must be able to cope with syntactically invalid input. It is normally unsatisfactory
+    for  the parser  to just  terminate on detecting an error. Errors must be recovered from  in some
+    way, producing an error message, and continuing the process of parsing until the end of input
+    is reached.<br />
+		CUP2 supports phrase-based error-recovery with dynamic synchronisation.
+    It can skip erroneous tokens based on rules given in the grammar in order
+    to resume safely.
+    It is able to retrieve all correctly read information, which may be used
+    to repair the error.
+    The usage of error-handling productions is explained in chapter <ref to="Error Productions"/>.
+    </p>
+
+    <p>
+    There may occur two exceptions when parsing erroneous input:
+    If the specification of the grammar does not provide an appropriate error-recovery for an error <code>X</code>,
+    the parser throws a <code>MissingErrorRecoveryException</code> if <code>X</code> occurs.
+    If the end of the input stream is reached too early (while searching for an appropriate token to resume parsing),
+    an <code>EndOfInputstreamException</code> is thrown.
+    In order to deal with all problematic situations equally,
+    a <em>parser observer</em> may be used.
+    </p>
+
+    <javacode src="res/errRec_registerParserObserver.java"/>
+
+
+    <p>
+      <img class="SD_rightFloatImg_border" alt="Picture of recovery-pyramid" src="res/errRec_pyrmd_exmpl.png" />
+      If the parser encounters an error, this implies that
+      <ol type="square">
+      <li>maybe some tokens have already been read (<i>a</i>) and may have been reduced to non-terminals (<i>b</i>)</li>
+      <li>maybe some bad tokens follow the current parsing position (<i>c</i>)</li>
+      <li>parsing continues with a set of well-known tokens (<i>d</i>)</li>
+      </ol>
+    </p>
+
+    <p>
+    In order to supply the grammar writer with sufficient tokens (from <i>a</i> and <i>c</i>),
+    the parser has to temporarily save correctly read tokens, although they might never be used,
+    and save many tokens in the <code>ErrorInformation</code> object.
+    Because this feature requires a lot of overhead for complex
+    grammars with a big input, by default they are turned off.
+    If this is the case, the error information lacks information about <i>a</i> and <i>c</i>,
+    but its start-, end- and crash-positions are still available.
+    <br />
+    This feature can be turned on by starting the parser using the parameter <code>saveTokens</code> - i.e. <code>parse( input, <i>true</i> )</code>
+    in order to obtain instances of <code>ErrorInformation</code> with complete lists of token.
+    </p>
+
+    <p>
+    If a token of set <i>d</i> is found, the parser cannot always take the subsequent input as granted,
+    because that token might occur randomly (e.g. due to misprint or as part of something else
+    which can not be read correctly because of the error).
+    In order to deal with such problems, the parser only continues with normal parsing if at least
+    three correct tokens follow the error.
+    This limit is called <em>error-sync-size</em> and it can be
+    changed dynamically during parsing.
+    In order to do so, register your own implementation of <code>ParserInterface</code>:
+
+    <javacode src="res/errRec_registerParserInterface.java"/>
+    </p>
+
+    <p>
+    Note that too few error-handling productions are used,
+    some errors might not be recovered from.
+    Although if too much or bad error-handling productions are used ,
+    the parser is not able to easily recover from an error.
+    <br />
+    Consider the following grammar:
+    <pre class="brush: plain">S &#8594; EXPR
+EXPR &#8594; number
+EXPR &#8594; EXPR plus EXPR
+EXPR &#8594; if COND EXPR else EXPR
+COND &#8594; BRACEL EXPR eq EXPR BRACER
+COND &#8594; BRACEL EXPR le EXPR BRACER
+    </pre>
+    After inserting an error-rule as the following for the condition rules,
+    error-recovery tries to find a <code>BRACER</code> to continue parsing the condition.
+    <pre class="brush: plain">COND &#8594; BRACEL error BRACER</pre>
+    However, what happens if the user forgot the <code>BRACER</code>?
+    If the terminal following the error-terminal was one which occurred more often,
+    the error-recovery would not assume the error to be that big.
+    Even if the expected token was found, in case of an additional error shortly after it,
+    the subsequent input is assumed to be part of the error until the
+    next <code>RBRACER</code> occurs.
+    If using sync-size correctly, severe expansions of errors may be reduced.
+    Nevertheless the following rule seems more suitable, because it resumes at the next expression,
+    although it extends an error inside the braces from <code>BRACEL</code> to <code>BRACER</code>.
+    <pre class="brush: plain">COND &#8594; error</pre>
+    </p>
+
+    <p>
+    In order to understand error-recovery in more detail, it is necessary to understand
+    how CUP2 parses. The parser driver maintains a stack to maintain all tokens which
+    do not yet state a full rule as well as values created from other stack-items previously stating a full rule.
+    The parse table contains the possible next action for every pair of stack-item and a
+    terminal which may be read.
+    Every action in the table may push the token onto the stack,
+    reduce the stack-items which state a full rule,
+    or indicate that this token cannot follow the previous input (error).
+    </p>
+
+    <p>
+		Error-recovery in CUP2 follows three steps:
+    <ol>
+      <li>
+        If an error is encountered, items will be popped from the stack until a <i>state A</i> is found
+        which is able to catch the error, i.e. it can make use of the error-terminal in order to change the stack to
+        <i>state B</i>.
+      </li>
+      <li>
+        Tokens from the input stream are read until a terminal <code>X</code> is found which may resume parsing after the error-terminal.
+        This means, that the action found for terminal <code>X</code>
+        under <i>state B</i> in the action table is not an error-action.
+        <code>X</code> is one of the expected terminals.
+      </li>
+      <li>
+        Parsing continues for error-sync-size tokens whilst all actions are not executed but saved
+        in a list (<em>dry-run</em>).
+        If an error occurs during dry-run, the saved actions are
+        dismissed and the recovery resumes at step 2.
+        Otherwise, the recovery is complete and the saved actions are being executed.
+      </li>
+		</ol>
+		</p>
+
+    <p>
+    The manner in which the parser cuts back the stack to the place at which an error-terminal can be shifted,
+    fixes the parser into trying to correct the error for a specific construct, which might not be appropriate.
+
+    TODO : reference to Bruce Hutton - Computer Language Implementation 2006 Lecture Notes
+    </p>
+
+		<section>Parsing Table Serialisation</section>
+		
+		<subsection>How to use Serialisation in Cup2</subsection>
+		
+		<p>In order to use serialisation an object of
+		type <code>LRParserSerialization</code> has to be
+		created and the file name of the file that is going to be used to store
+		the parser data has to be passed to the constructor.
+		When creating an <code>LRParserSerialization</code> the method <code>saveParser</code> can be used to save
+		a certain parser state to the file.
+		This is shown in the following figure. 
+		</p>
+		
+		<javacode src="res/LRParserSerializer.java" from="72" to="78" />
+		
+		<p>To restore a parser use the method <code>LRParserSerialization.loadParser</code>.
+		</p>
+
+		<subsection>How it works</subsection>
+		<p>The serialisation mechanism in CUP2 is based on the Java serialisation
+		mechanism. </p>
+		<p>When serialising a parser the parser state (especially the <code>LRParsingTable</code>
+		object) is saved to a file in order to be able to use the generated parser without having to generate the parser again later on.</p>
+
+		<p>
+		In the following class diagram all the classes that get serialised are shown.		
+		</p>
+		<img src="res/serializedClasses090820.png" />
+
+		<p>Semantic actions are treated in a special way when serialising the parser.
+		As we want to keep the specification as simple as possible, the user should not have to care
+		about serialisation when writing the CUP2 specification for a grammar. Therefore the <code>Production</code> class takes care of
+		serialising the semantic actions.</p>
+		<p>When an action is serialised the <code>Production</code> class saves a class object of
+		the anonymous subclass to the
+		file. When <em>deserialising</em> the parser,
+		the <code>Action</code> gets instantiated via 
+		<em>reflections</em>.</p>
+		
+		<p>To provide good compatibility with different JVM
+		versions, we explicitly configure the Java
+		serialisation to use <em>protocol version 1</em> 
+		of the Java serialisation.</p>
+		
+    
+    
+    <section id="Behind Token Completion">Token Completion</section>
+    <p>
+      This chapter goes more into detail on how to use CUP2 <em>token insertion</em>.
+      It is recommended to read chapters <ref to="Token Completion" />
+      and <ref to="General Scanner Interface" /> to understand the
+      basics. 
+    </p>
+    <p>
+      <img
+        src="res/tokenInsertion_InsertedScannerToken.png"
+        class="SD_rightFloatImg"
+      />
+      The class <code>InsertionScanner</code> is responsible for deciding which tokens to choose.
+      It uses the original scanner and the parse table in order to create tokens of type <code>InsertedScannerToken</code>,
+      which contain detailed error-information.<br />
+    </p>
+    <p>
+      A <code>TokenInsertionScanner</code> may be used e.g. in a GUI to propose solutions to the user
+      or to repair erroneous input and parse it.
+      A call to <code>scan4allInsertions()</code> retrieves all inserted tokens.
+      <!-- javacode following a rfi--><p style="clear:right;"></p>
+      <javacode src="res/tokRec_SpecMiniJava.java" from="41" to="47" />
+      <!--<img src="res/tokenInsertion_exmpleHighlighting.png" />-->
+      
+      <!--<i>Note: CUP2 does currently not perform any checks on value-bindings and/or types for insertables.</i><br />-->
+    </p>
+    <p>
+      The algorithm works on a buffer of <code>bufSize</code> tokens (<em>default: 8</em>)
+      which may contain <code>maxOversize</code> additional tokens following the last error in the buffer (<em>default: 8</em>).
+      During token insertion from left to right (into the buffer),
+      the scanner identifies how much other possibilities could have been chosen in the past
+      and when this number rises to <code>maxPossibilities</code> (<em>default:10</em>), another solution is chosen.
+      This way, solutions with many insertions are refused if a shorter one exists.
+      <javacode src="res/tokRec_SpecMiniJava.java" from="49" to="58" />
+    </p>
+    
+    <p>
+      <img
+        src="res/tokenInsertion_InsertionScanner_noLegend.png"
+        class="SD_rightFloatImg_border"
+      />
+      
+      In order to find solutions for the parser whilst the buffer may change, two stacks are maintained:
+      Operations for read (and inserted) tokens are performed on
+      the <code>readStack</code>. The <code>changeStack</code>
+      represents the contents of <code>readStack</code> at the time
+      the tokens in the buffer have not been read yet. 
+      The algorithm works as follows:
+      <ol>
+        <li>Tokens are read from another scanner <code>S</code> if available until the buffer is full.
+          The input is parsed according to the table on the <code>readStack</code>
+          (step C).
+        </li>
+        <li>If the input could be parsed this far, the first token of the buffer will be returned (step A).
+        </li>
+        <li style="width:100%;">
+          If an error occurred, <code>readStack</code> is returned to <code>changeStack</code>
+          and the contents of the buffer are cleared after pushing them back into <code>S</code> (step B).<br />
+          A first solution is chosen : A fitting token shall be inserted directly before the crash-position.
+          <ol>
+            <li>Tokens will be read from <code>S</code> and inserted according to
+            the chosen solution until at least an amount of error-sync-size tokens could be
+            parsed successfully after the error (step C).
+            </li>
+            <li>If the input could be parsed this far, the solution is suitable and all tokens from the
+              buffer can be returned (step D).
+            </li>
+            <li>Otherwise, if parsing the solution encounters an error or if checks on <code>maxOversize</code> or <code>maxPossibilities</code> fail,
+              the <code>TokenNumberGenerator</code> chooses another solution.
+              The contents of the buffer are cleared and the stacks returned once more
+              before the algorithm continues at step 3.1.
+            </li>
+            <li>Otherwise, if no more solutions are known, the original tokens from <code>S</code> are returned whilst the
+              erroneous <code>readStack</code> is restored using a simple phrase-based recovery (step D).
+              The <code>changeStack</code> has now of course again to be in the same state as the <code>readStack</code>.
+            </li>
+          </ol>
+        </li>
+        <li>Continue with step 1 or return if the input has been
+        completely parsed.</li>
+      </ol>
+    </p>
+	<chapter>Short Guide: CUP2 for CUP Users</chapter>
+
+
+	<section>From CUP to CUP2</section>
+
+		<p>First of all note that CUP2 is not an updated
+		  version of CUP, but a
+		  complete <em>re-implementation</em> with different
+		  design aspects in mind (v. section <ref to="Basic Design Principles"/>). It may be hard to transform
+		  your working CUP specification to a working CUP2
+		  specification in no time, but we hope that the
+		  advantages of CUP2 will be worth the
+		  effort. Furthermore, we are working on a tool (see
+		  section <ref to="CUPtoCUP2"/>) that helps you
+		  transform your CUP files into CUP2 classes.</p> 
+    <subsection>Specification in Pure Java</subsection>
+    
+    <p>As described in more detail in chapter <ref to="Usage"/>, CUP2 does not use plain text specification files, but works with pure Java data structures. This means that the grammar, precedences and semantic actions all have to be defined in Java.</p>
+    
+    <p>Consequently, the old JFlex specifications cannot be re-used in
+    CUP2. But the required changes are minimal, and altogether less
+    lines of code are needed. Refer to section <ref to="JFlex"/> for more information.</p>
+    
+    <subsection>Parsing Table instead of Parser Code</subsection>
+    
+    <p>CUP2 does not generate parser source code. Instead, a parsing
+    table (consisting of Java objects only) is generated, which is needed to initialise a predefined universal parser driver, as shown in section <ref to="Creating and Using the Parser"/>. This parsing table can be serialised to a file, and later quickly deserialized back to a Java object, as shown in section <ref to="Creating the Parser Driver"/>.</p>
+    
+    <subsection>Error Recovery</subsection>
+    <p>
+      The error recovery mechanism of CUP2 behaves quite similar to the one in CUP.
+      The error symbol is now given by the terminal <code>Error</code> which is a special terminal and thus should be imported:
+      <pre class="brush: java">import static edu.tum.cup2.grammar.SpecialTerminals.Error;</pre>
+      The method <code>error_sync_size()</code> can be
+      implemented. This method is used for parsing a sufficient number of tokens past the error symbol,
+      by creating your own parser interfaces:
+      <javacode src="res/errRec_registerParserInterface.java" from="1" to="5"/>
+    </p>
+    <p>
+      In fact, there is a change in the way an error will be reported.
+      CUP2 gathers detailed information inside an <code>ErrorInformation</code> object
+      and hands it over to the corresponding semantic action:
+      <javacode src="res/errRec_Aufgabe14_2.java" from="12" to="20" />
+      <p>
+      The object of type <code>ErrorInformation</code> provides start- and end-position of the whole error as well as a set of expected tokens.
+      It distinguishes between correctly read tokens, bad tokens and
+      the token which is responsible for getting the parser into an erroneous state (crash-token).
+      In addition, it contains the results of calculations already performed.
+      The flag <code>recovered</code> indicates that the error has been caught by an error-handling production.
+      <br />
+      The crash-token is the first bad token or alternatively the part of some correct input following the error.
+      As the calculation of correct tokens requires some memory overhead, it has to be enabled specifically
+      when parsing by using the <code>saveTokens</code> parameter:
+      <pre class="brush: java;">parse( inputScanner, true )</pre>
+      </p>      
+    </p>
+
+    <subsection>Customising the Parser</subsection>
+    <p>
+      CUP provides a series of methods that can be used to customise the generated parser.
+      Instead of supplying copying the given code and overwriting of
+      parser methods,
+      CUP2 uses interfaces and observers to communicate.
+      The following methods for customisation can be implemented in CUP2:
+      <ul>
+        <li>
+          <code>user_init(), int error_sync_size()</code><br/>
+          <blockquote>
+            by implementing the parser interface;
+          </blockquote>
+        </li>
+        <li>
+          <code>report_error(String message, Object info), report_fatal_error(String message, Object info),
+             public void syntax_error(Symbol cur_token), public void unrecovered_syntax_error(Symbol cur_token)
+          </code><br />
+          <blockquote>
+            by implementing and registering an error-observer and/or by catching exceptions;
+          </blockquote>
+        </li>
+        <li>
+          <code>Symbol scan(), Scanner getScanner(), setScanner(java_cup.runtime.Scanner s)</code><br />
+          <blockquote>by using the scanner-interface of CUP2;</blockquote>
+        </li>
+      </ul>
+    </p>
+
+    <p>
+      Examples for a simple parser interface and an error-observer are
+      given here:
+      <javacode src="res/errRec_registerParserInterface.java" from="1" to="5"/>
+      <javacode src="res/errRec_registerParserObserver.java" from="1" to="15"/>
+    </p>
+
+
+
+
+	<section id="CUPtoCUP2">Using the CUPtoCUP2 tool</section>
+
+    <p>For this section an understanding of the syntax and
+    semantics of the old CUP specification files and the new CUP2 specification files
+    (Java classes) is required.</p>
+
+    <p>The <em>CUPtoCUP2 tool</em> translates old CUP grammars to new
+    CUP2 grammars - with
+    restrictions. First of all: The old CUP specification files generate classes
+    that are derived from a certain super class and are able to make use of
+    objects and classes which are visible there or somewhere in the old package. Especially the
+    first aspect is responsible that it is not trivial to guarantee
+    that all the Java code written in an old CUP specification will compile - or
+    even run - when it is just transferred to a new environment. Except doing vast
+    modifications to the code is an option.</p>
+
+    <p>However some of the semantic actions might run in the
+    new environment with very few modifications. For example it is possible that
+    semantic actions in the old CUP specification are just used to build up the
+    parse tree and make no or little use of local or inherited methods.</p>
+
+    <p>There is particularly one trap to be aware of: The new CUP2 specification
+    syntax does not have the <code>%prec</code> feature. So if your old
+    specification file contains such syntax, you will have to find a work-around for
+    yourself. It is considered to implement this feature in future releases of
+    CUP2.</p>
+
+    <p>To illustrate the use of the <em>CUPtoCUP2 tool</em>, consider
+    the following example, which implements a simple calculator: </p>
+    
+    <javacode src="res/calc.cup"/>
+
+    <p>In order to call the CUPtoCUP2 tool you have to type the
+    following command in the root directory of the tool: </p>
+
+    <code>java -jar ./jar/Compiler.jar  &lt;on|off&gt; &lt;cup-file&gt; &lt;classname of the output class&gt;</code>
+
+    <p>The classpath should of course include the classes in the
+    directory of the tool.</p>
+
+    <p>The first argument tells the compiler to generate code for semantic actions
+    or to leave out the actions. The second argument tells the compiler which
+    <code>*.cup</code> file should be translated and the last argument specifies the name of
+    the class that is generated. The output looks like this:
+
+    <code>TODO Way to big example res/MyCalculator.java</code>
+  
+    The <code>init with</code> or the <code>action code</code>
+    sections are translated by copy and paste. Comments are generated around
+    these areas. Using this tool can save a lot of time when big grammars have to be
+    transformed. As you can see the ordering of the precedences in line 55 is
+    inverted, and of course shift actions like the one in line 87 work a little
+    bit different compared to the old CUP specification - cf. line 23 in the old CUP
+    file.</p>
+
+    <p>Most likely you would like to change the specified package in line 3 and
+    do the corresponding changes in lines 15 and 16. The <code>main</code> method
+    in line 24 is a little obsolete both in the old file (it is just an
+    example) and in the new specification format, as the parser is usually called
+    from a different class. Furthermore the import statement from the old CUP
+    file was deleted.</p>
+
+    <p>Additionally the <code>RESULT</code> in line
+    91 is initialised to make the compiler work. These changes can be best seen when a <code>diff</code> or
+    <code>vimdiff</code> is performed. Although a translation of a real CUP grammar is
+    not that easy, this can be seen as a proof of concept, as the following code
+    compiles.</p>
+    
+    <code> TODO Way to big example "res/MyCalculator.java~" </code>
+    
+	<chapter>Sample Project</chapter>
+
+		<p>We created a small yet expressive sample project to
+		demonstrate many of the features CUP2 includes. This
+		can be downloaded <a href="https://www2.in.tum.de/repos/cup2/trunk/docs/MiniJavaSample/">here</a>.</p>
+		
+		<p>It is a compiler for the language <em>MiniJava</em> (which is a subset of the Java programming language), which translates MiniJava source code into <em>MiniJVM</em> code (inspired by the JVM, yet much simpler) or a syntax tree. There is also a graphical user interface which looks like a small IDE, where you can see if your source code is correct (if not, the corresponding characters are underlined and also suggestions to fix that error are made).</p>
+		
+		<p>Let us have a look at the source code of that compiler:</p>
+		
+		<ul>
+			<li><code>flex/MiniJavaSpec.flex</code>: This is the JFlex specification of the MiniJava language that is used to build a scanner for our compiler. With JFlex, it is converted into the Java class <code>src/compiler/MiniJavaLexer.java</code></li>
+			<li><code>src/compiler/MiniJavaSpec.java</code>: This is the CUP2 specification of the MiniJava language which contains the grammar, precedences and all the semantic actions that are necessary to create a syntax tree from a MiniJava source.</li>
+		</ul>
+		
+		
+		
+	<chapter>Appendix</chapter>
+	
+		<p>This chapter contains some background information about the design and implementation of CUP2.</p>
+	
+	<section id="Basic Design Principles">Basic Design Principles</section>
+		
+		<p>Here are the basic ideas why we decided to implement CUP2 from scratch instead of modifying the old CUP release.</p>
+
+		<subsection>Java and Object-Orientation</subsection>
+
+		<p>While CUP appears to be more or less a port of a C program, CUP2 was designed from scratch with a typical Java style in mind. This includes the usage of all kinds of object-oriented programming techniques and Java's special features like <a href="http://java.sun.com/j2se/1.5.0/docs/guide/language/generics.html">Generics</a> and <a href="http://java.sun.com/docs/books/tutorial/reflect/">Reflection</a>.</p>
+
+		<subsection>Reliability of the Algorithms</subsection>
+		
+		<p>It is often not clear how algorithms work when
+		  reading source code, even if you developed it
+		  yourself. Therefore, if they are changed there is a danger of damaging the program, possibly at unexpected locations. When developing CUP2, the following steps were taken to minimise that risk:</p>
+
+		<ul>
+			<li><b>References to books</b> Though the algorithms are somewhat optimised for Java, the basic ideas are the same as described in the books from which they were taken. Where possible, there are comments explaining which part of the pseudo-code algorithm is implemented in the lines of Java code that follow.</li>
+			<li><b>JavaDoc</b> Almost all classes and methods are documented using <a href="http://java.sun.com/j2se/javadoc/">JavaDoc</a>. The class documentation describes the basic idea about a class and important dependencies to referenced classes. The documentation above the methods tells the developer what a method does and what parameters are required.</li>
+    	<li><b>JUnit tests</b> Most semantic errors encountered during development were discovered using unit tests via the <a href="http://www.junit.org/">JUnit</a> framework. These tests are included in the source distribution of CUP2, so that developers can use them to quickly check if the algorithms are still working and to write their own tests based on the existing ones. Of course these tests are no proofs in a mathematical sense, but at least they help to identify errors in the code more quickly and provide means to ensure that hitherto correct behaviour survives future changes.</li>
+    </ul>
+
+
+		<subsection>Platform for Different Parsing Algorithms</subsection>
+
+		<p>One goal of CUP2 was to create a platform for many types of parser generators, even more than just LR(1) and LALR(1), based on a hierarchy of abstract classes for reusing as much code as possible, as shown in figure TODO.</p>
+		
+		<p>TODO: <i>Somebody created a nice UML diagram showing the current state of the CUP2 generator classes, can you insert it here? Thanks, Andi</i></p>
+
+		<p>At the moment, LR(0), LR(1), LALR(1) and LR(1)-to-LALR (that means generating a parsing table with LR(1) first and then merging states according to the LALR principle) are included in CUP2. However, the object-oriented structure of the project allows adding any parsing algorithms meeting the following requirements:</p>
+
+		<ul>
+    	<li><b>Input</b> Any generator must accept a given grammar, and optionally precedence directives and a level of verbosity (useful for debugging or logging).</li>
+			<li><b>Output</b> For any LR generator, an LR parsing table has to be returned, which can then be used by the built-in LR parser driver. For any other type of generator, the type of output is arbitrary as long as a suitable parser driver is developed, too.</li>
+		</ul>
+
+		<p>This design has at least four advantages:</p>
+
+		<ul>
+			<li>Adding new algorithms in the future is possible without having to rebuild the whole framework (defining what a grammar and what a production is, parsing a specification file, and so on). For example, when creating an LL parser generator, the developers can concentrate on their main task instead of dealing with the framework.</li>
+			<li>As all generators are based on the same platform and thus share the same general conditions, it is much easier to compare the performance of different parsing algorithms in practice.</li>
+			<li>If developers decide to switch to another parsing algorithm, they are not forced to switch to another tool, but can even reuse the same specification without any changes.</li>
+			<li>The class hierarchy reflects the connections between the different algorithms, which follows the didactic concept also used in many books (like \cite{appel02}), making the code easier to understand with step by step instructions for new developers.</li>
+		</ul>
+
+
+		<subsection>Specification using Java Data Structures</subsection>
+
+		<p>A specification contains a list of all symbols, the grammar including its productions and precedence directives and semantic actions. From a plain text specification, all these objects have to be converted into Java-compatible structures when parsing the grammar. This leads to the idea of defining the specification using the Java grammar directly. The advantages of doing this are as follows:</p>
+
+		<ul>
+			<li>Since everything is valid Java code, all tools such as syntax highlighting or auto-completion are fully supported. A Java IDE like Eclipse could dramatically
+      speed up the definition of a specification since many kinds of errors are immediately detected and reported to the developer.</li>
+			<li>No specification parsing (conversion from plain text to Java structures) has to be done (only a few checks for correctness of the types). The data structures are already within the JVM and can be used immediately after loading the specification class.</li>
+			<li>The instances of symbols, productions, actions, and all other kinds of specification objects are used throughout the <em>whole</em> process of generating the parser <em>without</em> any kind of modification, so debugging is much easier and more performance optimisations are possible.</li>
+			<li>No Java source code has to be generated by the program. The user just adds the CUP2 library to the classpath, writes a specification class, and that is it.</li>
+		</ul>
+
+		<p>There are also some disadvantages of course. Mainly the definition in Java code is usually more verbose, since it has to conform to the Java grammar, which makes for example the definition of symbols with values more complicated. Another drawback is the definition of semantic actions. For each action, an anonymous subclass
+of <code>Action</code> has to be created, instead of just writing the method body like in CUP.</p>
+
+		<section id="genClassHier">Generator Class Hierarchy</section>
+		<p>Below you can see the hierarchy of the generator classes and how generators for different parsers are located in this hierarchy.
+		Besides the actual generator classes there are also classes that generate an automaton for a certain parsing algorithm.   
+		</p>
+		<img alt="Generator Class Hierarchy as of August 18 2009" src="res/generator_hierarchy_090818.png" />
+	</body>
+</html>
+

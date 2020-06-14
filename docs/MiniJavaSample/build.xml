@@ -1,0 +1,109 @@
+<project name="Compiler" default="compile" basedir=".">
+  <property name="flex"    location="flex"    />
+  <property name="src"     location="src"     />
+  <property name="dist"    location="dist"    />
+  <property name="lib"     location="lib"     />
+  <property name="bin"     location="bin"     />
+  <property environment="env" />
+
+  <path id="binaries">
+    <pathelement location="${bin}" />
+    <fileset dir="${bin}">
+      <include name="**/*.jar" />
+      <include name="**/*.zip" />
+    </fileset>
+    <pathelement path="${java.class.path}" />
+    <pathelement path="${classes}" />
+  </path>
+
+  <path id="libraries">
+    <pathelement location="${lib}" />
+    <fileset dir="${lib}">
+      <include name="**/*.jar" />
+      <include name="**/*.zip" />
+    </fileset>
+    <pathelement path="${java.class.path}" />
+  </path>
+
+  <taskdef name="jflex" 
+           classname="JFlex.anttask.JFlexTask" 
+           classpath="${lib}/JFlex.jar" 
+  />
+
+  <target name="init">
+    <mkdir dir="${bin}"/>
+    <mkdir dir="${dist}"/>
+  </target>
+
+  <target name="jflex">
+    <jflex file="${flex}/MiniJavaSpec.jflex" destdir="${src}" />
+  </target>
+
+  <target name="compile" depends="init">
+    <javac srcdir="${src}" destdir="${bin}" debug="on">
+      <classpath refid="libraries" />
+    </javac>
+  </target>
+
+  <target name="dist" depends="compile">
+   <copy todir="${dist}">
+     <fileset dir="${lib}" includes="**/**.jar"/>
+   </copy>  
+    <jar jarfile="${dist}/MiniJavaCompiler.jar" basedir="${bin}">
+     <manifest>
+       <attribute name="Main-Class" value="compiler.Main" />
+       <attribute name="Class-Path" value="cup2gen.jar" />
+     </manifest>
+    </jar>
+  </target>
+
+  <target name="run" depends="dist">
+    <echo>! Generiere jetzt den JVM Code</echo>
+    <java jar="${dist}/MiniJavaCompiler.jar"  fork="true">
+      <arg value="-jvm" />
+      <arg value="input.minijava" />
+      <classpath refid="libraries" />
+    </java>
+    <echo>! Generiere jetzt den Syntaxbaum als Metapost</echo>
+    <java jar="${dist}/MiniJavaCompiler.jar"  fork="true">
+      <arg value="-syntax" />
+      <arg value="input.minijava" />
+      <classpath refid="libraries" />
+    </java>
+    <echo>! Generiere jetzt die PDF-Grafik fuer den Syntaxbaum</echo>
+    <echo>Dafuer notwendige Tools:</echo>
+    <echo> * Metapost (mpost)   .mp -> .1</echo>
+    <echo> * Metapost (mptopdf) .1  -> .pdf</echo>
+    <echo> ------ Starte mp->pdf --------</echo>
+    <exec executable="mpost">
+      <arg value="input.minijava.mp"/>
+    </exec>
+    <exec executable="mptopdf">
+      <arg value="input.minijava.1"/>
+    </exec>
+    <echo> ------ mp->pdf fertig --------</echo>
+    <echo>! Generiere jetzt den Kontrollflussgraph als Metapost</echo>
+    <java jar="${dist}/MiniJavaCompiler.jar"  fork="true">
+      <arg value="-cfg" />
+      <arg value="input.minijava" />
+      <classpath refid="libraries" />
+    </java>
+    <echo>! Generiere jetzt die PDF-Grafik fuer den Kontrollflussgraph</echo>
+    <echo>Dafuer notwendige Tools:</echo>
+    <echo> * Metapost (mpost)   .cfg.mp -> .cfg.1</echo>
+    <echo> * Metapost (mptopdf) .cfg.1  -> .cfg.pdf</echo>
+    <echo> ------ Starte mp->pdf --------</echo>
+    <exec executable="mpost">
+      <arg value="input.minijava.cfg.mp"/>
+    </exec>
+    <exec executable="mptopdf">
+      <arg value="input.minijava.cfg.1"/>
+    </exec>
+    <echo> ------ mp->pdf fertig --------</echo>
+  </target>
+
+  <target name="clean">
+    <delete dir="${bin}" />
+    <delete dir="${dist}" />
+  </target>
+</project>

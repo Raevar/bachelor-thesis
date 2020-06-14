@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+
+<project name="cup2" default="cup2DemoTarget" basedir="C:\praktikum_cup\workspace\Cup2"> 
+
+<taskdef name="cup2" 
+	classname="edu.tum.cup2.ant.Cup2AntTask" 
+	classpath="bin" />
+
+<!--TODO: adjust path settings -->
+<property name="junit" location="C:\eclipse\eclipse\plugins\org.junit4_4.3.1\junit.jar" />
+
+
+<property name="src" location="./src"/>
+<property name="test" location="./test"/>
+<property name="build" location="./distrib/classes"/>
+
+<path id="cup2.sources">
+    <pathelement location="./src/"/>
+	<pathelement location="./test/"/>    
+</path>	
+
+<target name="cup2DemoTarget">
+	
+	<!-- typical cup2 task for SpecCalc4 
+		-->
+<cup2 
+   cup2specification="my.project.MySpec"
+   Cup2File="MyParseTable.serialised" >
+   <classpath>
+     <pathelement location="./bin/"/>
+   </classpath>
+</cup2>
+	     
+	
+	<!-- cup2 task for SpecCalc4 
+	-->
+      <cup2 
+		cup2specification="edu.tum.cup2.test.SpecCalc4" 
+      	SpecSrcDir = "test/edu/tum/cup2/test/"
+      	Cup2ClassDirectory="bin/" 
+      	Cup2SourcePath = "src/"
+      	specdestdir = "C:/praktikum_cup/workspace/CUP2/specdestdir"
+      	Cup2File = "cup2filefromant_SpecCalc4.cup2"
+      	Algorithm = "LR1"
+      	Verbose = "on"
+      	PrintParsingTable = "printparsingtable_SpecCalc4.htm"
+		>
+	      	<classpath>
+	      		<pathelement path="${build}"/>
+	      		<pathelement path="${junit}"/>
+	      		<pathelement location="./bin/"/>
+	      	</classpath>
+      </cup2>
+	
+	<!-- cup2 task for SpecCalc1 
+	-->	
+	  <cup2 
+		cup2specification="edu.tum.cup2.test.SpecCalc1_NotReduced" 
+	   	specsrcdir = "test/edu/tum/cup2/test/"
+	   	cup2classdirectory="bin/" 
+	      	
+	   	cup2file = "cup2filefromant_SpecCalc1_NotReduced.cup2"
+	   	algorithm = "LR1"
+	   	verbose = "on"
+	   	printparsingtable = "printparsingtable_SpecCalc1_NotReduced.htm"
+		>
+		   	<classpath>
+		   		<pathelement path="${build}"/>
+		   		<pathelement path="${junit}"/>
+		   		<pathelement location="./bin/"/>
+		   	</classpath>
+	  </cup2>
+</target>
+	
+	
+	<!-- Example:
+	  <cup2 
+		cup2specification="edu.tum.cup2.test.SpecCalc4" 
+      	specsrcdir = "C:/praktikum_cup/workspace/CUP2/test/edu/tum/cup2/test/"
+      	cup2classdirectory="C:/praktikum_cup/workspace/CUP2/bin" 
+      	Cup2SourcePath = "C:/praktikum_cup/workspace/CUP2/src"
+      	specdestdir = "C:/praktikum_cup/workspace/CUP2/specdestdir"
+      	cup2file = "C:/praktikum_cup/workspace/CUP2/cup2filefromant.cup2"
+      	algorithm = "LR1"
+      	verbose = "true"
+      	printparsingtable = "C:/praktikum_cup/workspace/CUP2/printparsingtable.txt"
+		>
+	      	<classpath>
+	      		<pathelement path="${build}"/>
+	      		<pathelement path="${junit}"/>
+	      		<pathelement location="./test/"/>
+	      	</classpath>
+      </cup2>
+    -->
+
+</project>

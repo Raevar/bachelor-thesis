@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+
+<!-- authors : dangl stefan -->
+
+<project name="minijava serialization" default="cup2DemoTarget" basedir=".">
+
+<taskdef name="cup2" classname="edu.tum.cup2.ant.Cup2AntTask">
+	<classpath>
+		<fileset dir="./lib/">
+		    <include name="*.jar"/>
+		</fileset>
+		<pathelement location="./bin/"/>
+	</classpath>
+</taskdef>
+	
+
+<property name="src" location="./src"/>
+<property name="build" location="./bin/"/>
+
+<path id="cup2.sources">
+    <pathelement location="./src/"/>
+</path>
+
+<target name="cup2DemoTarget">
+
+	<!-- typical cup2 task for SpecCalc4
+	      	cup2SourcePath="./src/" // compile cup2
+	      	Algorithm = "LALR1"
+	      	PrintParsingTable="minijava_table.html"
+		-->
+	      <cup2
+			cup2specification="compiler.MiniJavaSpec"
+	      	Cup2ClassDirectory="./bin/"
+	      	SpecSrcDir = "./src/"
+	      	verbose = "on"
+	      	cup2file = "./MiniJava.cup2"
+	      >
+	    	<classpath>
+	    	   		<pathelement path="${build}"/>
+	    	   		<pathelement path="${junit}"/>
+    	   			<pathelement location="./bin/"/>
+	    	</classpath>
+	      </cup2>
+
+</target>
+
+
+	<!-- Example:
+	  <cup2
+		cup2specification="edu.tum.cup2.test.SpecCalc4"
+      	specsrcdir = "C:/praktikum_cup/workspace/CUP2/test/edu/tum/cup2/test/"
+      	cup2classdirectory="C:/praktikum_cup/workspace/CUP2/bin"
+      	Cup2SourcePath = "C:/praktikum_cup/workspace/CUP2/src"
+      	specdestdir = "C:/praktikum_cup/workspace/CUP2/specdestdir"
+      	cup2file = "C:/praktikum_cup/workspace/CUP2/cup2filefromant.cup2"
+      	algorithm = "LR1"
+      	verbose = "true"
+      	printparsingtable = "C:/praktikum_cup/workspace/CUP2/printparsingtable.txt"
+		>
+	      	<classpath>
+	      		<pathelement path="${build}"/>
+	      		<pathelement path="${junit}"/>
+	      		<pathelement location="./test/"/>
+	      	</classpath>
+      </cup2>
+    -->
+
+</project>

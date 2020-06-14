@@ -1,0 +1,27 @@
+
+/**
+  Should be used to classify a right-floating img, or other.
+  Use f.e. <img class="SD_rightFloatImg" src="..." /> or
+  <div style="width:300px;" class="SD_rightFloatImg">text text text in a box</div>
+ **/
+.SD_rightFloatImg
+{
+  float:right !important;
+  margin-left:1em !important;
+  margin-bottom:1em !important;
+}
+
+/**
+  The same as SD_rightFloatImg with a single
+  grey border on the bottom and left side.
+**/
+.SD_rightFloatImg_border
+{
+  float:right !important;
+  margin-left:0.5em !important;
+  padding-left:0.5em !important;
+  margin-bottom:0.5em !important;
+  padding-bottom:0.5em !important;
+  border-left:1px solid #DDD !important;
+  border-bottom:1px solid #DDD !important;
+}
