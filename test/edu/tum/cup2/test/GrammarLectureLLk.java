@@ -30,13 +30,13 @@ import edu.tum.cup2.util.ArrayTools;
  */
 public class GrammarLectureLLk
 {
-	public enum T implements Terminal
+	public enum T implements edu.tum.cup2.grammar.Terminal
 	{
 		a, b
 	}
 
 
-	public enum N implements NonTerminal
+	public enum N implements edu.tum.cup2.grammar.NonTerminal
 	{
 		S
 	}

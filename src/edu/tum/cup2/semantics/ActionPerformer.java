@@ -16,19 +16,20 @@ public class ActionPerformer
 	
 	/**
 	 * Performs the given action. TODO: optimize for speed
-	 * @param action      the {@link Action} instance
-	 * @param valueStack  the stack of semantic values, which is not
-	 *                    changed by this method
-	 * @param rhsSize     the number of right hand side symbols of the
-	 *                    corresponding production
+	 * @param action      			the {@link Action} instance
+	 * @param valueStack  			the stack of semantic values, which is not
+	 *                    			changed by this method
+	 * @param parametersNeeded 	    the number of parameters that are possibly needed.
+	 *                              default LR-parser:	right hand side symbols of the corresponding production
+	 *                    			earley-parser:		NonTerminals of the right hand side of the corresponding production
 	 * @return  the resulting new value. If the method has a void return type, NoValue is returned.
 	 */
-	public static Object perform(Action action, Stack<Object> valueStack, int rhsSize)
+	public static Object perform(Action action, Stack<Object> valueStack, int parametersNeeded)
 	{
 		//collect all semantic values of the production (ignore null values)
 		Object[] parameters = new Object[action.getParamsCount()];
 		int parametersIndex = 0;
-		for (int i = 0; i < rhsSize; i++)
+		for (int i = 0; i < parametersNeeded; i++)
 		{
 			Object v = valueStack.get(valueStack.size() - 1 - i);
 			if (v != SymbolValue.NoValue)
@@ -55,18 +56,15 @@ public class ActionPerformer
 			System.err.println("Error:");
 			System.err.println("  Requested action: " + action.getMethod().toGenericString());
 			System.err.println("  Given parameters: " + Arrays.toString(parameters));
-			System.err.println("  RHS size:         " + rhsSize);
+			System.err.println("  RHS size:         " + parametersNeeded);
 			System.err.println("  Value stack:      " + valueStack);
 			System.exit(0);
 			return null;
 		}
 		catch (Exception ex)
 		{
-			//TODO
 			ex.printStackTrace();
-			//System.exit(0);
 			return null;
 		}
 	}
-
 }

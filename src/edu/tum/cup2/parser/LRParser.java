@@ -127,7 +127,7 @@ public class LRParser extends AParser implements Serializable
 	}
 	
 	
-	public synchronized Object parse(Scanner input, boolean saveTokens, Object... initArgs) throws LRParserException,
+	public synchronized Object parse(Scanner input, Boolean saveTokens, Object... initArgs) throws LRParserException,
 			IOException
 	{
 		try

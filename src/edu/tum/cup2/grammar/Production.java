@@ -122,6 +122,14 @@ public final class Production implements Serializable
 	{
 		this(id, lhs, Arrays.asList(rhs), null, null);
 	}
+
+	public Production(int id, NonTerminal lhs, List<Symbol> rhs, Action reduceAction) {
+		this(id, lhs, rhs, reduceAction, null);
+	}
+
+	public Production(int id, NonTerminal lhs, List<Symbol> rhs) {
+		this(id, lhs, rhs, null, null);
+	}
 	
 	
 	/**
